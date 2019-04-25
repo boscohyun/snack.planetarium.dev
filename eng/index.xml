@@ -1,0 +1,178 @@
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en"><title>Planetarium Engineering Snack</title><link rel="self" href="https://snack.planetarium.dev/eng/index.xml"/><link rel="alternate" href="https://snack.planetarium.dev/eng/" title="Planetarium Engineering Snack"/><link rel="alternate" href="https://snack.planetarium.dev/kor/" hreflang="ko" title="플라네타리움 엔지니어링 스낵"/><updated>2019-04-09T00:00:00&#43;00:00</updated><id>https://snack.planetarium.dev/eng/</id><entry><title>Libplanet 0.2 Released</title><link rel="alternate" href="https://snack.planetarium.dev/eng/2019/04/libplanet-0.2/" title="Libplanet 0.2 Released"/><link rel="alternate" href="https://snack.planetarium.dev/kor/2019/04/libplanet-0.2/" hreflang="ko" title="Libplanet 0.2 릴리스"/><id>https://snack.planetarium.dev/eng/2019/04/libplanet-0.2/</id><published>2019-04-09T00:00:00&#43;00:00</published><updated>2019-04-09T00:00:00&#43;00:00</updated><content type="html">
+&lt;p&gt;Hello, last week our team released the second minor version&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a href=&#34;#fn:1&#34;&gt;1&lt;/a&gt;&lt;/sup&gt; of &lt;a href=&#34;https://libplanet.io/&#34;&gt;Libplanet&lt;/a&gt;,
+&lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.2.0&#34;&gt;Version 0.2&lt;/a&gt;.
+Although there have been several changes,
+this article will cover some key feature additions and API changes.&lt;/p&gt;
+&lt;h2 id=&#34;introduction-to-libplanet&#34;&gt;Introduction to Libplanet&lt;/h2&gt;
+&lt;p&gt;Before getting into our updates, I haven&amp;rsquo;t introduced &lt;a href=&#34;https://libplanet.io/&#34;&gt;Libplanet&lt;/a&gt; on this blog,
+so let me briefly explain it to you.&lt;/p&gt;
+&lt;p&gt;Libplanet is a common library that solves game implementation problems such as
+&lt;abbr title=&#34;Peer-to-Peer&#34;&gt;P2P&lt;/abbr&gt; communication and data synchronization
+when creating online multiplay games that run on distributed P2P.&lt;/p&gt;
+&lt;p&gt;Libplanet is now being developed in C# language,
+with the aim of being used in conjunction with the popular Unity engine.
+Of course, even if you don&amp;rsquo;t use Unity,
+Libplanet targets &lt;a href=&#34;https://github.com/dotnet/standard/blob/master/docs/versions/netstandard2.0.md&#34;&gt;.NET Standard 2.0&lt;/a&gt; so that it&amp;rsquo;s easy to use for
+games that are implemented on .NET or Mono.&lt;/p&gt;
+&lt;p&gt;Another feature of Libplanet is that it is a library,
+not an engine or a framework.
+Since engines and frameworks control the entry point (&lt;code&gt;Main()&lt;/code&gt; method) of
+a process and dictate its execution flow, game programmers have limited control
+and can only program essentially through scripts within sections explictly allowed.
+Libplanet does not preempt the game process and operates only when it is
+explicitly invoked by the game programmer.
+This allows Libplanet to function with game engines like Unity without imposing
+additional limitations on the developer.&lt;/p&gt;
+&lt;p&gt;Libplanet is listed on &lt;a href=&#34;https://www.nuget.org/packages/Libplanet/&#34;&gt;NuGet&lt;/a&gt; along with &lt;a href=&#34;https://docs.libplanet.io/&#34;&gt;API docs&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;abbr-title-network-address-translation-nat-abbr-traversal&#34;&gt;&lt;abbr title=&#34;Network Address Translation&#34;&gt;NAT&lt;/abbr&gt; Traversal&lt;/h2&gt;
+&lt;p&gt;Although P2P communication was possible from &lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.1.0&#34;&gt;Libplanet 0.1&lt;/a&gt;,
+all peers had to have a public IP.
+In other words, because we couldn&amp;rsquo;t reach peers behind routers,
+network communication was actually limited in reality.
+Solving this issue was a top priority for us and so
+traversing NAT was a major goal in the 0.2 roadmap.
+To cover most cases,
+we implemented &lt;a href=&#34;https://tools.ietf.org/html/rfc5766&#34;&gt;RFC 5766&lt;/a&gt; and &lt;a href=&#34;https://tools.ietf.org/html/rfc5389&#34;&gt;RFC 5389&lt;/a&gt;,
+called &lt;abbr title=&#34;Traversal Using Relays around NAT&#34;&gt;TURN&lt;/abbr&gt; and
+&lt;abbr title=&#34;Session Traversal Utilities for NAT&#34;&gt;STUN&lt;/abbr&gt;.
+Also, there weren&amp;rsquo;t any open source C# implementation to ease the process,
+so our team&amp;rsquo;s Swen Mun implemented the necessary parts of
+the specification from scratch.
+If you&amp;rsquo;re interested in Swen&amp;rsquo;s journey, please also read the article,
+&lt;a href=&#34;https://snack.planetarium.dev/eng/2019/04/nat_traversal_1/&#34;&gt;&lt;em&gt;Moving Beyond NAT&lt;/em&gt;&lt;/a&gt;, in which he explains how he solved this problem.&lt;/p&gt;
+&lt;h2 id=&#34;more-game-fitting-transaction&#34;&gt;More Game-fitting Transaction&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Tx.Transaction-1.html&#34;&gt;&lt;code&gt;Transaction&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/a&gt; is a unit that synchronizes data between network members.
+Up to the previous version of Libplanet,
+we referred to existing technologies such as &lt;a href=&#34;https://bitcoin.org/&#34;&gt;Bitcoin&lt;/a&gt;
+that solve similar problems and took on the concept
+that all transactions had a sender and a recipient.
+In the case of Bitcoin, it deals with monetary transactions so
+the notion that there are senders and recipients in
+every transaction comes naturally.
+In games, however, there are often actions that do not carry a recipient
+concept, such as the movement of a character,
+or actions that may have more than one recipient, such as wide range skills.&lt;/p&gt;
+&lt;p&gt;So to make this transaction more game-fitting,
+Libplanet from this version on will dismiss the &lt;code&gt;Sender&lt;/code&gt;–&lt;code&gt;Recipient&lt;/code&gt; concept of
+&lt;code&gt;Transaction&amp;lt;T&amp;gt;&lt;/code&gt; and instead,
+replace it with the &lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Tx.Transaction-1.html#Libplanet_Tx_Transaction_1_Signer&#34;&gt;&lt;code&gt;Signer&lt;/code&gt;&lt;/a&gt;–&lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Tx.Transaction-1.html#Libplanet_Tx_Transaction_1_UpdatedAddresses&#34;&gt;&lt;code&gt;UpdatedAddress&lt;/code&gt;&lt;/a&gt; concept.&lt;/p&gt;
+&lt;h2 id=&#34;new-status-access-api&#34;&gt;New Status Access API&lt;/h2&gt;
+&lt;p&gt;Previously, all &lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Action.IAction.html&#34;&gt;&lt;code&gt;IAction&lt;/code&gt;&lt;/a&gt; implementations had to request a set of account
+addresses to be accessed within the &lt;code&gt;Execute()&lt;/code&gt; method through
+the &lt;code&gt;RequestStates()&lt;/code&gt; method.
+Ones that attempted to read or write status of addresses that weren&amp;rsquo;t requested
+in advance were treated as invalid.&lt;/p&gt;
+&lt;p&gt;However, we came to the conclusion that, since the status shared
+in the public network through blockchain could be read anyway,
+the limitation on reading didn&amp;rsquo;t mean much, only the limit on updating.&lt;/p&gt;
+&lt;p&gt;Additionally, the duplicated information on the accounts to be accessed
+in both the &lt;code&gt;RequestStates()&lt;/code&gt; method and the &lt;code&gt;Execute()&lt;/code&gt; method was bug-prone.
+And even if you were careful, fixing the both methods together was a big hassle.&lt;/p&gt;
+&lt;p&gt;To solve these problems, the &lt;code&gt;IAction&lt;/code&gt; interface&amp;rsquo;s status access API
+has been greatly improved on this version of Libplanet.
+The &lt;code&gt;RequestStates()&lt;/code&gt; method has disappeared altogether,
+and the &lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Action.IActionContext.html#Libplanet_Action_IActionContext_PreviousStates&#34;&gt;&lt;code&gt;PreviousStates&lt;/code&gt; property&lt;/a&gt; of the &lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Action.IActionContext.html&#34;&gt;&lt;code&gt;IActionContext&lt;/code&gt;&lt;/a&gt; object,
+which entered the factor in &lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Action.IAction.html#Libplanet_Action_IAction_Execute_Libplanet_Action_IActionContext_&#34;&gt;&lt;code&gt;IAction.Execute()&lt;/code&gt; method&lt;/a&gt;,
+now provides a kind of &amp;ldquo;record of changes&amp;rdquo; API.
+This &amp;ldquo;record of changes&amp;rdquo; is stacked inside the &lt;code&gt;Execute()&lt;/code&gt; method and
+when it finally returns the change history, the status is then updated.&lt;/p&gt;
+&lt;p&gt;Also, when a transaction is created, the action is executed in &amp;ldquo;rehearsal mode,&amp;rdquo;
+which obtains a set of addresses that the &lt;code&gt;Execute()&lt;/code&gt; method is
+trying to update.
+The address set is then included in the transaction with a signature.
+This prevents a recipient node from changing the account status of addresses
+not included in the address set of the signed transaction.&lt;/p&gt;
+&lt;h2 id=&#34;optional-subtype-polymorphism&#34;&gt;Optional Subtype Polymorphism&lt;/h2&gt;
+&lt;p&gt;Up to the previous version, the only usage of Libplanet actions was that
+each game defines an abstract classs which implements &lt;code&gt;IAction&lt;/code&gt; and
+has multiple concrete classes inheriting it.
+But depending on the game, there are cases where it might be better to implement
+&lt;code&gt;IAction&lt;/code&gt; as an only class and select a behavior based on data that goes into
+the action than to define multiple types of action at the &lt;code&gt;IAction&lt;/code&gt; level.
+Moreover, some projects might face difficulties because the dynamic dispatcher
+for &lt;code&gt;IAction&lt;/code&gt; types is internally implemented using &lt;a href=&#34;https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/reflection&#34;&gt;.NET reflection&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Hence, from this version of Libplanet, &lt;code&gt;T&lt;/code&gt; in &lt;code&gt;Transaction&amp;lt;T&amp;gt;&lt;/code&gt; needs not only to
+implement &lt;code&gt;IAction&lt;/code&gt; but also to concrete classes.
+Abstraction classes or interfaces aren&amp;rsquo;t acceptable
+even if they implement &lt;code&gt;IAction&lt;/code&gt;,
+and the presence of subtypes is completely ignored.&lt;/p&gt;
+&lt;p&gt;Instead, if you want to select the behavior of an action through
+subtype polymorphism, you can use &lt;code&gt;PolymorphicAction&amp;lt;T&amp;gt;&lt;/code&gt;, a new action class to
+decorate another action.
+For example, changing &lt;code&gt;Transaction&amp;lt;AbstractAction&amp;gt;&lt;/code&gt; to
+&lt;code&gt;Transaction&amp;lt;PolymorphicAction&amp;lt;AbstractionAction&amp;gt;&amp;gt;&lt;/code&gt; will work as it has been
+in most cases.
+Of course, the &lt;code&gt;PolymorphicAction&amp;lt;T&amp;gt;&lt;/code&gt; class uses .NET reflection under the hood.&lt;/p&gt;
+&lt;h2 id=&#34;furthermore&#34;&gt;Furthermore,&lt;/h2&gt;
+&lt;p&gt;There have been lots of other changes on Libplanet 0.2.0, so check them out in
+our &lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.2.0&#34;&gt;release notes&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;FYI, two days after the release of &lt;em&gt;0.2.0&lt;/em&gt;, a new version with some
+troubleshooting issues is now released, with the latest version being
+&lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.2.1&#34;&gt;0.2.1&lt;/a&gt; (as of April 9, 2019).&lt;/p&gt;
+&lt;p&gt;If you&amp;rsquo;re curious, install and have a look around.
+And If you have any questions, please join our &lt;a href=&#34;https://discord.gg/ue9fgc3&#34;&gt;Discord chatroom&lt;/a&gt;!&lt;/p&gt;
+&lt;div class=&#34;footnotes&#34;&gt;
+&lt;hr /&gt;
+&lt;ol&gt;
+&lt;li id=&#34;fn:1&#34;&gt;We have not yet released a major version.
+&lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><author><name>Hong Minhee</name><uri>https://github.com/dahlia</uri><email>hong.minhee@planetariumhq.com</email></author></entry><entry><title>Moving Beyond NAT</title><link rel="alternate" href="https://snack.planetarium.dev/eng/2019/04/nat_traversal_1/" title="Moving Beyond NAT"/><link rel="alternate" href="https://snack.planetarium.dev/kor/2019/04/nat_traversal_1/" hreflang="ko" title="NAT를 넘어서 가자"/><id>https://snack.planetarium.dev/eng/2019/04/nat_traversal_1/</id><published>2019-04-04T00:00:00&#43;00:00</published><updated>2019-04-04T00:00:00&#43;00:00</updated><content type="html">
+&lt;p&gt;Hello, I&amp;rsquo;m Swen Mun from the Planetarium Engineering Team.
+Today we&amp;rsquo;re going to talk about what&amp;rsquo;s known as &lt;a href=&#34;https://en.wikipedia.org/wiki/NAT_traversal&#34;&gt;&lt;abbr title=&#34;Network Address Translation&#34;&gt;NAT&lt;/abbr&gt; traversal techniques&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;so-what-s-the-problem&#34;&gt;So what&amp;rsquo;s the problem?&lt;/h2&gt;
+&lt;p&gt;From game servers to smartphones, every device connected to the Internet has an &lt;a href=&#34;https://en.wikipedia.org/wiki/IP_address&#34;&gt;IP address&lt;/a&gt;.
+This enables devices to connect to one another and send/receive messages.&lt;/p&gt;
+&lt;p&gt;The fundamental problem with IP address is that quantity is limited.
+In the case of &lt;a href=&#34;https://en.wikipedia.org/wiki/IPv4&#34;&gt;IPv4&lt;/a&gt; &amp;mdash; the most widely used protocol, it uses 32-bit addresses which means address space is limited to 2&lt;sup&gt;32&lt;/sup&gt; (more than 4 billion) addresses.
+(Of course we don&amp;rsquo;t use all of these addresses.)
+This seems enough at first glance, but it&amp;rsquo;s far short of operating more than one device per person on the planet.
+In fact, since 2011, &lt;a href=&#34;https://en.wikipedia.org/wiki/IPv4_address_exhaustion&#34;&gt;IPv4 addresses have all been exhausted&lt;/a&gt; and no new addresses have been assigned.&lt;/p&gt;
+&lt;p&gt;To solve this problem, &lt;a href=&#34;https://en.wikipedia.org/wiki/IPv6&#34;&gt;IPv6&lt;/a&gt; has been proposed to increase address space to 128-bits, but the supply hasn&amp;rsquo;t been able to meet users&amp;rsquo; demand.
+Thus, many network operators chose to separate the network and have multiple private IPs, and convert those addresses so that they could access the Internet through one authorized IP.
+This method is commonly referred to as &lt;a href=&#34;Network Address Translation&#34;&gt;NAT&lt;/a&gt; and sometimes refers to a device that handles such process (in general, a &lt;a href=&#34;https://en.wikipedia.org/wiki/Router_(computing)&#34;&gt;router&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;In the server-client model, accessing the Internet through NAT is not a problem.
+If the server has an authorized IP, the client can access it, whether through NAT or not.
+However, if you need to connect to a device inside the NAT/firewall, you&amp;rsquo;ve got a problem.
+Because devices outside NAT cannot access the IP of a private network inside the NAT.
+Techniques to address these situations are called &lt;a href=&#34;https://en.wikipedia.org/wiki/NAT_traversal&#34;&gt;NAT traversal techniques&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&#34;so-which-technique-do-i-use&#34;&gt;So which technique do I use?&lt;/h2&gt;
+&lt;h3 id=&#34;abbr-title-universal-plug-and-play-upnp-abbr-abbr-title-internet-gateway-device-protocol-igdp-abbr&#34;&gt;&lt;abbr title=&#34;Universal_Plug_and_Play&#34;&gt;UPnP&lt;/abbr&gt; (&lt;abbr title=&#34;Internet Gateway Device Protocol&#34;&gt;IGDP&lt;/abbr&gt;)&lt;/h3&gt;
+&lt;p&gt;Techniques to pass through NAT can largely be divided into two categories &amp;mdash; whether they are supported by NAT or not.
+Protocols such as &lt;a href=&#34;https://en.wikipedia.org/wiki/Universal_Plug_and_Play&#34;&gt;UPnP&lt;/a&gt; that are proposed to meet the requirements of the modern Internet in which equipment connectivity is valued also addresses NAT passing issues (e.g., &lt;a href=&#34;https://en.wikipedia.org/wiki/Internet_Gateway_Device_Protocol&#34;&gt;Internet Gateway Device Protocol&lt;/a&gt;).
+However, this solution can only be applied to equipment that supports UPnP protocol.&lt;/p&gt;
+&lt;h3 id=&#34;relay-abbr-title-traversal-using-relays-around-nat-turn-abbr&#34;&gt;Relay (&lt;abbr title=&#34;Traversal Using Relays around NAT&#34;&gt;TURN&lt;/abbr&gt;)&lt;/h3&gt;
+&lt;p&gt;The other way around is not getting help from NAT. In other words, this way provides external access while maintaining the private-authorized IP system. How is this possible? At this point, let’s talk about what we can do and can&amp;rsquo;t do.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;For device with an authorized IP,&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;It can process connections from other devices.&lt;/li&gt;
+&lt;li&gt;It can connect to a device with a different authorized IP.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;A device with a private IP,&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;It is unable to process connection from other devices. 
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;To be very precise, it&amp;rsquo;s possible within the same network. But I&amp;rsquo;ll exclude this case to simplify the story. :)&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;It can connect to a device that has a different authorized IP.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Let&amp;rsquo;s assume that a server (&lt;em&gt;S&lt;/em&gt;) with a separate, authorized IP exists outside NAT.
+If this server processes the connection instead of the device (let’s call this &lt;em&gt;A&lt;/em&gt;) behind NAT and forwards (relay) the content to &lt;em&gt;A&lt;/em&gt;, then we can handle the connection with confidence without relying on NAT&amp;rsquo;s behavior.
+This method is referred to as relay technique and is officially called, &lt;a href=&#34;https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT&#34;&gt;&lt;abbr title=&#34;Traversal Using Relays around NAT&#34;&gt;TURN&lt;/abbr&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;hole-punching&#34;&gt;Hole Punching&lt;/h3&gt;
+&lt;p&gt;Another way to avoid direct help from NAT is by using a technique called &lt;a href=&#34;commonly known as [UDP hole punching] but it is also applicable to TCP&#34;&gt;hole punching&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Hole Punching also assumes a transit server (&lt;em&gt;S&lt;/em&gt;) similar to &lt;a href=&#34;https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT&#34;&gt;TURN&lt;/a&gt;.
+However, unlike &lt;a href=&#34;https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT&#34;&gt;TURN&lt;/a&gt;, the transit server does not directly relay all communications.
+Instead, it only passes on NAT&amp;rsquo;s authorized IP and device &lt;em&gt;A&lt;/em&gt;&amp;rsquo;s port information to to device &lt;em&gt;B&lt;/em&gt;.
+In this way when attempting to access &lt;em&gt;A&lt;/em&gt;, &lt;em&gt;B&lt;/em&gt; attempts to access NAT&amp;rsquo;s authorized IP and port, not &lt;em&gt;A&lt;/em&gt;&amp;rsquo;s private IP.&lt;/p&gt;
+&lt;p&gt;Although hole punching does not require NAT to implement a specific protocol like UPnP, it does require NAT’s port mapping method.
+Specifically, this technique is only applicable to NAT that follows endpoint independent mapping behavior.&lt;/p&gt;
+&lt;h2 id=&#34;next-story&#34;&gt;Next Story&lt;/h2&gt;
+&lt;p&gt;The NAT traversal techniques we have discussed today have different applicable situations and they all have different pros and cons.
+Therefore, people in our field use these methods in combination.
+Next time we&amp;rsquo;ll look have a closer look on &lt;a href=&#34;https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT&#34;&gt;TURN&lt;/a&gt;, which is the most expensive but the most reliable communication method to move beyond NAT.&lt;/p&gt;</content><author><name>Swen Mun</name><uri>https://github.com/longfin</uri><email>swen@planetariumhq.com</email></author></entry><entry><title>Prologue</title><link rel="alternate" href="https://snack.planetarium.dev/eng/2019/03/beginning/" title="Prologue"/><link rel="alternate" href="https://snack.planetarium.dev/kor/2019/03/beginning/" hreflang="ko" title="시작하며"/><id>https://snack.planetarium.dev/eng/2019/03/beginning/</id><published>2019-03-29T00:00:00&#43;00:00</published><updated>2019-03-29T00:00:00&#43;00:00</updated><content type="html">&lt;p&gt;Hello World. This is Team &lt;a href=&#34;https://planetariumhq.com/&#34;&gt;Planetarium&lt;/a&gt; &amp;mdash; builders of &lt;a href=&#34;https://libplanet.io/&#34;&gt;open source library that allows anyone to create decentralized multi-play game through blockchain technology&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Ever since &lt;a href=&#34;https://bitcoin.org/&#34;&gt;Bitcoin&lt;/a&gt; revealed itself to the world in 2009, lots of studies and researches have been done on decentralization and blockchain tech. These concepts can be traced back to a specific field in computer science called &lt;a href=&#34;https://en.wikipedia.org/wiki/Distributed_computing&#34;&gt;distributed computing&lt;/a&gt;. Despite a fairly lengthy history of these technologies, applying them in conjunction with game development process at the blockchain core level often causes difficulties, e.g., direct application of existing research or a lack of implementations in the platforms required for game development.&lt;/p&gt;
+&lt;p&gt;We&amp;rsquo;re going to share what we&amp;rsquo;ve learned through our trial and error in short, light format. Like &amp;rdquo;snack&amp;rdquo;, we&amp;rsquo;re aiming for short, breathless experiences that do not burden readers compared to conventional, gruesome blog posts &amp;mdash; and we&amp;rsquo;re hoping to update them regularly.&lt;/p&gt;
+&lt;p&gt;We&amp;rsquo;ll be back with our first post. Till then.&lt;/p&gt;</content><author><name>Swen Mun</name><uri>https://github.com/longfin</uri><email>swen@planetariumhq.com</email></author><author><name>Hong Minhee</name><uri>https://github.com/dahlia</uri><email>hong.minhee@planetariumhq.com</email></author></entry></feed>

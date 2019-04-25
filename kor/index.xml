@@ -1,0 +1,139 @@
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ko"><title>플라네타리움 엔지니어링 스낵</title><link rel="self" href="https://snack.planetarium.dev/kor/index.xml"/><link rel="alternate" href="https://snack.planetarium.dev/kor/" title="플라네타리움 엔지니어링 스낵"/><link rel="alternate" href="https://snack.planetarium.dev/eng/" hreflang="en" title="Planetarium Engineering Snack"/><updated>2019-04-09T00:00:00&#43;00:00</updated><id>https://snack.planetarium.dev/kor/</id><entry><title>Libplanet 0.2 릴리스</title><link rel="alternate" href="https://snack.planetarium.dev/kor/2019/04/libplanet-0.2/" title="Libplanet 0.2 릴리스"/><link rel="alternate" href="https://snack.planetarium.dev/eng/2019/04/libplanet-0.2/" hreflang="en" title="Libplanet 0.2 Released"/><id>https://snack.planetarium.dev/kor/2019/04/libplanet-0.2/</id><published>2019-04-09T00:00:00&#43;00:00</published><updated>2019-04-09T00:00:00&#43;00:00</updated><content type="html">
+&lt;p&gt;안녕하세요. 지난주 저희 팀은 &lt;a href=&#34;https://libplanet.io/&#34;&gt;Libplanet&lt;/a&gt;의 두번째 마이너 버전&lt;sup class=&#34;footnote-ref&#34; id=&#34;fnref:1&#34;&gt;&lt;a href=&#34;#fn:1&#34;&gt;1&lt;/a&gt;&lt;/sup&gt;인 &lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.2.0&#34;&gt;0.2 버전&lt;/a&gt;을 릴리스했습니다.
+여러 변화가 있었지만, 이 글에서는 몇 가지 주요 기능 추가 및 API 변경에 대해 다루겠습니다.&lt;/p&gt;
+&lt;h2 id=&#34;libplanet-소개&#34;&gt;Libplanet 소개&lt;/h2&gt;
+&lt;p&gt;이에 앞서, 이 블로그에 &lt;a href=&#34;https://libplanet.io/&#34;&gt;Libplanet&lt;/a&gt;을 소개한 적이 없으니 간략히 설명을 하고 넘어가겠습니다.&lt;/p&gt;
+&lt;p&gt;Libplanet은 분산 &lt;abbr title=&#34;Peer-to-Peer&#34;&gt;P2P&lt;/abbr&gt;로 돌아가는 온라인
+멀티플레이 게임을 만들 때, 그러한 게임들이 매번 구현해야 하는 P2P 통신이나
+데이터 동기화 등의 문제를 푸는 공용 라이브러리입니다.&lt;/p&gt;
+&lt;p&gt;Libplanet은 널리 쓰이는 Unity 엔진과 함께 쓰일 것을 염두에 두고 만들어져,
+현재 C# 언어로 개발되고 있습니다. 물론 Unity 엔진을 쓰지 않더라도 .NET 또는 Mono
+플랫폼으로 구현된 게임이라면 쉽게 붙일 수 있도록, &lt;a href=&#34;https://github.com/dotnet/standard/blob/master/docs/versions/netstandard2.0.md&#34;&gt;.NET Standard 2.0&lt;/a&gt;을 타깃하여
+이식성을 확보하고 있습니다.&lt;/p&gt;
+&lt;p&gt;Libplanet의 또 다른 특징은, 프레임워크나 엔진이 아닌 라이브러리라는 점입니다.
+엔진이나 프레임워크는 게임 프로세스의 진입점(&lt;code&gt;Main()&lt;/code&gt; 메서드)과 주도권을 가져간 채
+허용된 부분에 한해서 게임 프로그래머가 스크립팅할 수 있게 하는 데 반해,
+Libplanet은 게임 프로세스를 선점하지 않으며 게임 프로그래머가 명시적으로
+호출한 곳에서만 비간섭적으로 (unobtrusively) 동작합니다.
+덕분에 Unity 같은 기성 게임 엔진과도 무리 없이 함께 쓸 수 있습니다.&lt;/p&gt;
+&lt;p&gt;Libplanet은 &lt;a href=&#34;https://www.nuget.org/packages/Libplanet/&#34;&gt;NuGet&lt;/a&gt;에 올라가 있으며, &lt;a href=&#34;https://docs.libplanet.io/&#34;&gt;API 문서&lt;/a&gt;도 있습니다.&lt;/p&gt;
+&lt;h2 id=&#34;abbr-title-network-address-translation-nat-abbr-우회&#34;&gt;&lt;abbr title=&#34;Network Address Translation&#34;&gt;NAT&lt;/abbr&gt; 우회&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.1.0&#34;&gt;첫 버전&lt;/a&gt;부터도 P2P 통신은 됐지만, 피어는 모두 공인 IP를 갖고 있어야 했습니다.
+즉, 공유기 뒤에 있는 피어와는 통신이 되지 않았기 때문에, 현실적으로는 쓰임이 제한적이었습니다.
+이를 해결하는 것이 급선무였기 때문에 어떻게든 NAT를 우회하는 것이 0.2 로드맵에서 가장 중요했고,
+우선은 조금 비효율적이어도 가장 많은 케이스를 커버하고자
+&lt;abbr title=&#34;Traversal Using Relays around NAT&#34;&gt;TURN&lt;/abbr&gt; 및
+&lt;abbr title=&#34;Session Traversal Utilities for NAT&#34;&gt;STUN&lt;/abbr&gt;이라 불리는
+&lt;a href=&#34;https://tools.ietf.org/html/rfc5766&#34;&gt;RFC 5766&lt;/a&gt; 및 &lt;a href=&#34;https://tools.ietf.org/html/rfc5389&#34;&gt;RFC 5389&lt;/a&gt;를 구현했습니다. 이 과정에서 오픈 소스 C# 구현을 찾지 못해
+스펙에서 필요한 부분들을 모두 직접 구현하는 수고를 같은 팀의 문성원 님이 해주셨습니다.
+이 경험을 풀어서 쓴 〈&lt;a href=&#34;https://snack.planetarium.dev/kor/2019/04/nat_traversal_1/&#34;&gt;NAT를 넘어서 가자&lt;/a&gt;〉라는 글도 읽어주시기 바랍니다!&lt;/p&gt;
+&lt;h2 id=&#34;좀-더-게임스러운-트랜잭션&#34;&gt;좀 더 게임스러운 트랜잭션&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Tx.Transaction-1.html&#34;&gt;&lt;code&gt;Transaction&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/a&gt;은 네트워크 구성원 사이에 데이터를 동기화하는 단위입니다.
+Libplanet은 이전 버전까지는 비슷한 문제를 푸는 &lt;a href=&#34;https://bitcoin.org/&#34;&gt;비트코인&lt;/a&gt; 같은 기존 기술을 참고했기 때문에,
+모든 트랜잭션에 발신자와 수신자가 있다는 개념을 그대로 받아들였습니다.
+비트코인은 송금을 다루므로 재화가 이동하기만 하며 복제되어선 안 됩니다.
+따라서 보내는 사람이 있다면 받는 사람이 꼭 있어야 하며,
+모든 트랜잭션에 발신자와 수신자가 있다는 개념이 자연스럽습니다.
+하지만 게임에서는 캐릭터의 이동처럼 수신자 개념이 없는 행동이나,
+광역기처럼 수신자가 둘 이상일 수 있는 행동도 자주 나타납니다.&lt;/p&gt;
+&lt;p&gt;이러한 상황을 더 자연스럽게 다룰 수 있도록,
+이번 버전부터는 &lt;code&gt;Transaction&amp;lt;T&amp;gt;&lt;/code&gt;의 &lt;code&gt;Sender&lt;/code&gt;–&lt;code&gt;Recipient&lt;/code&gt; 개념이 사라지고,
+대신 &lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Tx.Transaction-1.html#Libplanet_Tx_Transaction_1_Signer&#34;&gt;&lt;code&gt;Signer&lt;/code&gt;&lt;/a&gt;–&lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Tx.Transaction-1.html#Libplanet_Tx_Transaction_1_UpdatedAddresses&#34;&gt;&lt;code&gt;UpdatedAddresses&lt;/code&gt;&lt;/a&gt; 개념이 그 자리를 갈음하게 되었습니다.&lt;/p&gt;
+&lt;h2 id=&#34;새로운-상태-접근-api&#34;&gt;새로운 상태 접근 API&lt;/h2&gt;
+&lt;p&gt;기존에는 모든 &lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Action.IAction.html&#34;&gt;&lt;code&gt;IAction&lt;/code&gt;&lt;/a&gt; 구현은 &lt;code&gt;Execute()&lt;/code&gt; 메서드 안에서 접근할 계정의 주소 목록을
+반드시 &lt;code&gt;RequestStates()&lt;/code&gt; 메서드를 통해 제출해야 했습니다.
+&lt;code&gt;Execute()&lt;/code&gt; 메서드에서 미리 제출하지 않은 주소의 상태를 읽거나 쓰려고 하면 유효하지 않은
+액션으로 취급됐습니다.&lt;/p&gt;
+&lt;p&gt;하지만 블록체인을 통해 공개 네트워크에서 공유된 상태들은 어차피 누구나 읽을 수 있기 때문에,
+읽기의 제한은 큰 의미가 없으며 쓰기의 제한만 있으면 된다는 결론에 이르게 됐습니다.&lt;/p&gt;
+&lt;p&gt;또한, 기존에는 접근할 계정에 대한 정보가 &lt;code&gt;RequestStates()&lt;/code&gt; 메서드와 &lt;code&gt;Execute()&lt;/code&gt; 메서드
+양쪽 코드에 중복되므로 버그가 나기 쉬운 구조였고, 조심한다고 하더라도 양쪽을 함께 고쳐야 하는
+API도 매우 불편했습니다.&lt;/p&gt;
+&lt;p&gt;이러한 문제들을 두루 풀고자, 이번 버전부터는 &lt;code&gt;IAction&lt;/code&gt; 인터페이스의 상태 접근 API가
+크게 개선됐습니다. &lt;code&gt;RequestStates()&lt;/code&gt; 메서드는 아예 사라졌으며,
+&lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Action.IAction.html#Libplanet_Action_IAction_Execute_Libplanet_Action_IActionContext_&#34;&gt;&lt;code&gt;IAction.Execute()&lt;/code&gt;&lt;/a&gt;의 인자로 들어온 &lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Action.IActionContext.html&#34;&gt;&lt;code&gt;IActionContext&lt;/code&gt;&lt;/a&gt; 객체의
+&lt;a href=&#34;https://docs.libplanet.io/0.2.1/api/Libplanet.Action.IActionContext.html#Libplanet_Action_IActionContext_PreviousStates&#34;&gt;&lt;code&gt;PreviousStates&lt;/code&gt;&lt;/a&gt;가 일종의 &amp;ldquo;변경 기록&amp;rdquo; API를 제공하게 되었습니다.
+이 변경 기록을 &lt;code&gt;Execute()&lt;/code&gt; 메서드 안에서 쌓아 나간 뒤,
+최종적으로 그 변경 기록을 반환하면 상태가 실제로 갱신됩니다.&lt;/p&gt;
+&lt;p&gt;또한, 트랜잭션이 만들어질 때 액션이 &amp;ldquo;리허설 모드&amp;rdquo;로 실행되는데,
+이 리허설을 통해 &lt;code&gt;Execute()&lt;/code&gt; 메서드가 상태를 갱신하려고 하는 주소의 목록을 얻어서
+이 목록도 함께 트랜잭션에 포함되어 서명됩니다.
+서명된 트랜잭션을 다른 노드가 받았을 때는, 트랜잭션을 서명한 당사자가 리허설을 통해
+구한 주소 목록 이외의 계정 상태를 바꾸는 것이 차단됩니다.&lt;/p&gt;
+&lt;h2 id=&#34;액션의-서브타입-다형성-분리&#34;&gt;액션의 서브타입 다형성 분리&lt;/h2&gt;
+&lt;p&gt;이전 버전까지는 게임마다 &lt;code&gt;IAction&lt;/code&gt;을 구현한 추상 클래스를 정의하고,
+이를 상속하는 여러 구체 클래스를 두는 것이 Libplanet이 상정한 유일한 이용법이었습니다.
+그러나 게임에 따라 게임 내 액션의 종류를 &lt;code&gt;IAction&lt;/code&gt; 수준에서 나누는 것보다,
+&lt;code&gt;IAction&lt;/code&gt;을 단 하나의 클래스로 구현하고 액션에 들어가는 데이터를 통해 동작을 세분화하는 방식이
+더 적합한 경우도 있습니다. 또, 액션의 타입에 따라 동적으로 디스패치하는 방식은 내부적으로
+&lt;a href=&#34;https://docs.microsoft.com/ko-kr/dotnet/framework/reflection-and-codedom/reflection&#34;&gt;.NET의 리플렉션&lt;/a&gt;을 써서 구현했기 때문에 이러한 것이 곤란한 프로젝트도 있을 수 있습니다.&lt;/p&gt;
+&lt;p&gt;그래서 이번 버전부터는 &lt;code&gt;Transaction&amp;lt;T&amp;gt;&lt;/code&gt;의 &lt;code&gt;T&lt;/code&gt;는 &lt;code&gt;IAction&lt;/code&gt;을 구현할 뿐만 아니라 구체 클래스만을
+받아들이게 됐습니다. 추상 클래스나 인터페이스는 &lt;code&gt;IAction&lt;/code&gt;을 구현했다고 해도 받아들여지지 않으며,
+구체 클래스 역시 서브타입의 존재는 완전히 무시되게 됩니다.&lt;/p&gt;
+&lt;p&gt;대신, 기존처럼 서브타입 다형성을 통해 액션의 동작을 세분화하고 싶다면,
+&lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.2.1&#34;&gt;&lt;code&gt;PolymorphicAction&amp;lt;T&amp;gt;&lt;/code&gt;&lt;/a&gt;라는 새로운 액션 데코레이터 구현을 쓰면 됩니다.
+예를 들어 기존의 타입이 &lt;code&gt;Transaction&amp;lt;AbstractAction&amp;gt;&lt;/code&gt;이었다면,
+&lt;code&gt;Transaction&amp;lt;PolymorphicAction&amp;lt;AbstractAction&amp;gt;&amp;gt;&lt;/code&gt; 타입으로 고쳐서 쓰면
+대부분의 경우 기존대로 동작하게 됩니다.
+물론, &lt;code&gt;PolymorphicAction&amp;lt;T&amp;gt;&lt;/code&gt; 클래스는 내부적으로 .NET 리플렉션을 씁니다.&lt;/p&gt;
+&lt;h2 id=&#34;그-외&#34;&gt;그 외&lt;/h2&gt;
+&lt;p&gt;그밖에도 여러 변화가 있었고, 자세한 것은 &lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.2.0&#34;&gt;전체 변경 내역&lt;/a&gt;에서 확인할 수 있습니다.&lt;/p&gt;
+&lt;p&gt;참고로 &lt;em&gt;0.2.0&lt;/em&gt; 버전이 릴리스된 뒤 이틀 뒤에 몇 가지 문제를 해결한 &lt;a href=&#34;https://github.com/planetarium/libplanet/releases/tag/0.2.1&#34;&gt;&lt;em&gt;0.2.1&lt;/em&gt;&lt;/a&gt;이 릴리스되어,
+(2019년 4월 9일) 현재 최신 버전은 &lt;em&gt;0.2.1&lt;/em&gt;입니다.&lt;/p&gt;
+&lt;p&gt;호기심이 생기신 분들은 설치해서 이용해 보시고, 궁금한 점이 있으시다면 저희 팀이 상주해 있는
+&lt;a href=&#34;https://discord.gg/ue9fgc3&#34;&gt;디스코드 대화방&lt;/a&gt;에 놀러오세요!&lt;/p&gt;
+&lt;div class=&#34;footnotes&#34;&gt;
+&lt;hr /&gt;
+&lt;ol&gt;
+&lt;li id=&#34;fn:1&#34;&gt;저희는 아직 메이저 릴리스를 한 적이 없습니다.
+&lt;a class=&#34;footnote-return&#34; href=&#34;#fnref:1&#34;&gt;&lt;sup&gt;[return]&lt;/sup&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><author><name>홍민희</name><uri>https://github.com/dahlia</uri><email>hong.minhee@planetariumhq.com</email></author></entry><entry><title>NAT를 넘어서 가자</title><link rel="alternate" href="https://snack.planetarium.dev/kor/2019/04/nat_traversal_1/" title="NAT를 넘어서 가자"/><link rel="alternate" href="https://snack.planetarium.dev/eng/2019/04/nat_traversal_1/" hreflang="en" title="Moving Beyond NAT"/><id>https://snack.planetarium.dev/kor/2019/04/nat_traversal_1/</id><published>2019-04-04T00:00:00&#43;00:00</published><updated>2019-04-04T00:00:00&#43;00:00</updated><content type="html">
+&lt;p&gt;안녕하세요. 플라네타리움 개발팀 문성원입니다. 오늘은 &lt;a href=&#34;https://en.wikipedia.org/wiki/NAT_traversal&#34;&gt;NAT 통과 기법&lt;/a&gt;이라고 알려진 방법에 대해서 이야기를 해볼까 합니다.&lt;/p&gt;
+&lt;h2 id=&#34;뭐가-문젠가요&#34;&gt;뭐가 문젠가요?&lt;/h2&gt;
+&lt;p&gt;게임 서버에서 스마트폰에 이르기까지 현대 인터넷에 참여하는 모든 단말은 &lt;a href=&#34;https://en.wikipedia.org/wiki/IP_address&#34;&gt;IP 주소&lt;/a&gt;를 가지고 있습니다. 이는 한 단말이 다른 단말에 연결하여 메시지를 주고받기 위함인데요.&lt;/p&gt;
+&lt;p&gt;근본적인 문제는 이러한 IP 주소의 수량이 한정되어 있다는 것입니다. 널리 쓰이는 &lt;a href=&#34;https://en.wikipedia.org/wiki/IPv4&#34;&gt;IPv4&lt;/a&gt;의 경우엔 32비트로 구성되어 단순 계산으론 2&lt;sup&gt;32&lt;/sup&gt;개(약 40억개 이상)를 할당할 수 있습니다. (물론 이걸 전부 사용하는 것은 아닙니다.) 얼핏 보면 충분해 보이기도 하지만, 1인당 1개 이상의 기기를 운용하기에는 턱없이 모자라지요. 실제로 2011년 이후로 &lt;a href=&#34;https://en.wikipedia.org/wiki/IPv4_address_exhaustion&#34;&gt;IPv4 주소가 모두 소진&lt;/a&gt;되어 신규 주소도 할당이 되지 않는 상태입니다.&lt;/p&gt;
+&lt;p&gt;이 문제를 해결하기 위해, 주소 공간을 128비트로 크게 늘린 &lt;a href=&#34;https://en.wikipedia.org/wiki/IPv6&#34;&gt;IPv6&lt;/a&gt;가 제안되었으나, IPv4 주소 고갈에 비해 보급이 더뎠습니다. 해서 많은 네트워크 담당자들은 네트워크를 분리하여 복수의 사설 IP를 두고, 인터넷엔 그러한 주소를 변환하여 하나의 공인 IP로만 접속하게 하는 방식을 택했습니다. 흔히 이야기하는 &lt;a href=&#34;https://en.wikipedia.org/wiki/Network_address_translation&#34;&gt;NAT(Network Address Translation)&lt;/a&gt;는 이러한 작업을 이르는 말인 동시에, 경우에 따라선 해당 작업을 처리하는 장치(일반적으론 &lt;a href=&#34;https://en.wikipedia.org/wiki/Router_(computing)&#34;&gt;라우터&lt;/a&gt;)를 일컫기도 합니다.&lt;/p&gt;
+&lt;p&gt;서버–클라이언트 모델에서 이런 NAT를 통한 인터넷 접속은 크게 문제가 되지 않습니다. 서버가 공인 IP를 가지고 있다면, 클라이언트는 NAT를 거치건 거치지 않건 접속할 수 있기 때문이죠. 하지만 만약 NAT 안쪽에 있는 단말에 접속해야 한다면 문제가 발생합니다. NAT 안쪽의 사설 네트워크의 IP로는 NAT 바깥의 단말들이 접속할 수 없기 때문이죠. 이러한 상황을 해결하기 위한 기법들을 NAT 통과 기법이라고 합니다.&lt;/p&gt;
+&lt;h2 id=&#34;그래서-뭘-써야-하나요&#34;&gt;그래서 뭘 써야 하나요?&lt;/h2&gt;
+&lt;h3 id=&#34;upnp-igdp&#34;&gt;UPnP (IGDP)&lt;/h3&gt;
+&lt;p&gt;NAT를 통과하는 기법은 크게 NAT의 도움을 받느냐 그렇지 않느냐로 구분할 수 있습니다. 장비들의 연결성이 중시되는 현대 인터넷의 요구 사항에 맞춰서 제안된 &lt;a href=&#34;https://en.wikipedia.org/wiki/Universal_Plug_and_Play&#34;&gt;UPnP&lt;/a&gt;와 같은 프로토콜은, NAT 통과 문제를 해결하는 기능(예: &lt;a href=&#34;https://en.wikipedia.org/wiki/Internet_Gateway_Device_Protocol&#34;&gt;Internet Gateway Device Protocol&lt;/a&gt;)을 지원하기도 합니다. 다만, 이는 어디까지나 해당 프로토콜을 지원하는 장비에만 적용할 수 있는 해결책입니다. 어떠한 장비들은 UPnP를 선택적으로 지원하거나, 아예 지원하지 않을 수도 있습니다.&lt;/p&gt;
+&lt;h3 id=&#34;relay-turn&#34;&gt;Relay (TURN)&lt;/h3&gt;
+&lt;p&gt;다른 한 가지 방법은 NAT의 도움을 받지 않는 방법입니다. 다시 이야기하면, 사설 IP ↔ 공인 IP 체계를 유지한 상태에서 외부에서 접속이 가능하게 한다는 것이기도 합니다. 어떻게 할 수 있을까요? 이쯤에서 우리가 할 수 있는 것과 할 수 없는 일을 정리하면 아래와 같습니다.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;공인 IP를 가진 단말은
+&lt;ul&gt;
+&lt;li&gt;다른 단말의 연결을 처리할 수 있습니다.&lt;/li&gt;
+&lt;li&gt;다른 공인 IP를 가진 단말에 연결할 수 있습니다.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;사설 IP를 가진 단말은
+&lt;ul&gt;
+&lt;li&gt;다른 단말의 연결을 처리할 수 없습니다.
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;아주 엄밀하게 말하면, 같은 네트워크 안에선 가능합니다. 하지만 이야기를 단순하게 하기 위해 이 경우는 제외하겠습니다. :)&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;다른 공인 IP를 가진 단말에 연결할 수 있습니다.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;즉 별도의 공인 IP를 가진 서버(S)를 가정하고, 이 서버가 (본래라면 NAT 뒤의 단말이 처리해야 할) 연결을 대신 처리하면서 내용을 NAT 뒤의 단말에 전달(릴레이)해주면 NAT의 동작에 의존하지 않고 확실하게 연결을 처리할 수 있습니다. 이를 릴레이 기법이라고 하며, &lt;a href=&#34;https://en.wikipedia.org/wiki/Traversal_Using_Relays_around_NAT&#34;&gt;TURN&lt;/a&gt;이라는 표준으로 정의되어 있습니다.&lt;/p&gt;
+&lt;h3 id=&#34;홀-펀칭&#34;&gt;홀 펀칭&lt;/h3&gt;
+&lt;p&gt;NAT의 직접적인 도움을 받지 않는 다른 방법 중 한 가지는 &lt;a href=&#34;https://en.wikipedia.org/wiki/Hole_punching_(networking)&#34;&gt;홀 펀칭(Hole Punching)&lt;/a&gt;이라 불리는 기법입니다. (흔히 &lt;a href=&#34;https://en.wikipedia.org/wiki/UDP_hole_punching&#34;&gt;UDP 홀펀칭&lt;/a&gt;으로 널리 알려졌지만, &lt;a href=&#34;https://en.wikipedia.org/wiki/TCP_hole_punching&#34;&gt;TCP에 대해서도 적용할 수 있습니다.&lt;/a&gt;)&lt;/p&gt;
+&lt;p&gt;홀 펀칭 역시 위의 릴레이와 마찬가지로 중계 서버(S)를 가정합니다. 다만 릴레이와 다른 점은, 중계 서버가 직접 통신을 전부 중계하는 것이 아니라, 접속을 처리할 단말(A)이 속한 NAT의 공인 IP와 포트 정보만 접속을 원하는 단말(B)에 넘겨서, B가 A에 접속할 때 A의 사설 IP가 아닌 NAT의 공인 IP와 포트로 접속을 시도하는 방식입니다.&lt;/p&gt;
+&lt;p&gt;홀 펀칭은 UPnP처럼 NAT에 특정 프로토콜의 구현을 요구하는 것은 아니지만, NAT의 포트 매핑 방식을 이용하는 기법이기 때문에, 동작 모드에 따라, 보다 정확하게 이야기하자면, 목적지 독립적 매핑(Endpoint Independent Mapping)으로 동작하는 NAT에서만 적용 가능합니다.&lt;/p&gt;
+&lt;h2 id=&#34;다음-이야기들&#34;&gt;다음 이야기들&lt;/h2&gt;
+&lt;p&gt;위에서 살펴 본 NAT 통과 기법들은 실현 가능한 상황이나 장단점이 각기 다릅니다. 해서 현업에서는 다양한 방법을 복합적으로 사용합니다. 다음 시간에는 그 중에서 가장 비싸지만 가장 안정적으로 통신을 보장할 수 있는 TURN을 이용한 릴레이 기법에 대해서 더 자세히 살펴보도록 하겠습니다.&lt;/p&gt;</content><author><name>문성원</name><uri>https://github.com/longfin</uri><email>swen@planetariumhq.com</email></author></entry><entry><title>시작하며</title><link rel="alternate" href="https://snack.planetarium.dev/kor/2019/03/beginning/" title="시작하며"/><link rel="alternate" href="https://snack.planetarium.dev/eng/2019/03/beginning/" hreflang="en" title="Prologue"/><id>https://snack.planetarium.dev/kor/2019/03/beginning/</id><published>2019-03-29T00:00:00&#43;00:00</published><updated>2019-03-29T00:00:00&#43;00:00</updated><content type="html">&lt;p&gt;안녕하세요.
+블록체인 기술을 통해 탈중앙 멀티플레이 게임과 함께,
+&lt;a href=&#34;https://libplanet.io/&#34;&gt;누구나 그런 게임을 만들 수 있는 오픈 소스 라이브러리&lt;/a&gt;를
+만들고 있는 &lt;a href=&#34;https://planetariumhq.com/&#34;&gt;플라네타리움&lt;/a&gt; 팀입니다.&lt;/p&gt;
+&lt;p&gt;탈중앙화나 블록체인에 대해서는 2009년에 &lt;a href=&#34;https://bitcoin.org/&#34;&gt;비트코인&lt;/a&gt;이 선을 보인 이래로
+많은 연구나 개발이 진행이 된 분야입니다. 더 거슬러 올라가자면 컴퓨터 과학
+분야에서 &lt;a href=&#34;https://en.wikipedia.org/wiki/Distributed_computing&#34;&gt;분산 컴퓨팅&lt;/a&gt;이란 이름으로 연구되던 부분이기도 하죠.
+하지만 이러한 기술을 블록체인 코어 레벨에서 게임 개발 프로세스와 연결해서
+개발하다 보니 기존 연구를 바로 적용하기 어렵거나, 게임 개발에 필요한
+플랫폼에 구현체가 없는 경우가 종종 있었습니다.&lt;/p&gt;
+&lt;p&gt;저희는 스낵처럼 짧은 글들을 통해, 이런 시행착오를 통해 어떤 것을
+배웠는지를 공유하려고 합니다.
+&amp;ldquo;스낵&amp;rdquo;이란 이름에서 드러나는 것처럼, 일반적인 블로그 포스팅에 비해
+읽는 쪽도 쓰는 쪽도 크게 부담이 가지 않는 짧은 호흡을 지향하고 있으며
+그만큼 갱신도 자주 하려고 합니다.&lt;/p&gt;
+&lt;p&gt;그럼 첫 포스팅으로 찾아뵙겠습니다.&lt;/p&gt;</content><author><name>문성원</name><uri>https://github.com/longfin</uri><email>swen@planetariumhq.com</email></author><author><name>홍민희</name><uri>https://github.com/dahlia</uri><email>hong.minhee@planetariumhq.com</email></author></entry></feed>
